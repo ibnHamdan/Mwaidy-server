@@ -9,6 +9,9 @@ const config = {
   password: SQL_PASSWORD,
   server: SQL_SERVER,
   database: SQL_DATABASE,
+  option: {
+    enableArithAbort: "true",
+  },
 };
 
 const client = async () => {
