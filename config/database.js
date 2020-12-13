@@ -1,29 +1,73 @@
-const mongoose = require('mongoose');
+const sql = require("mssql");
+const dotenv = require("dotenv");
 
-require('dotenv').config();
+dotenv.config();
 
-const devConnection = process.env.DB_STRING;
-const prodConnection = process.env.DB_STRING_PROD;
+const { SQL_SERVER, SQL_DATABASE, SQL_USER, SQL_PASSWORD } = process.env;
+const config = {
+  user: SQL_USER,
+  password: SQL_PASSWORD,
+  server: SQL_SERVER,
+  database: SQL_DATABASE,
+};
 
-// Connect to the correct environment database
-if (process.env.NODE_ENV === 'production') {
-    mongoose.connect(prodConnection, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        retryWrites:false
-    });
+const client = async () => {
+  let pool = null;
 
-    mongoose.connection.on('connected', () => {
-        console.log('Database connected');
-    });
-} else {
-    mongoose.connect(devConnection, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        retryWrites:false
-    });
+  const closePool = async () => {
+    try {
+      await pool.close();
+      pool = null;
+    } catch (err) {
+      pool = null;
+    }
+  };
 
-    mongoose.connection.on('connected', () => {
-        console.log('Database connected');
-    });
-}
+  const getConnection = async () => {
+    try {
+      if (pool) {
+        return pool;
+      }
+      pool = await sql.connect(config);
+
+      pool.on("error", async (err) => {
+        console.log("conection db pool error", err);
+        await closePool();
+      });
+      return pool;
+    } catch (err) {
+      console.log(err, "error connection to sql server");
+      pool = nul;
+    }
+  };
+
+  return getConnection;
+};
+
+module.exports = client;
+
+// sql.connect(config, function (err) {
+//   if (err) console.log(err);
+
+//   let sqlRequest = new sql.Request();
+
+//   let sqlQuery = "Select * From users";
+
+//   sqlRequest.query(sqlQuery, function (err, data) {
+//     if (err) console.log(err);
+
+//     console.log(data);
+//   });
+// });
+
+// async function queryDb() {
+//   let pool = await sql.connect(config);
+//   let data = await pool.request().query("select * from users");
+
+//   pool.close;
+//   sql.close;
+
+//   return data;
+// }
+
+// module.exports = queryDb;
