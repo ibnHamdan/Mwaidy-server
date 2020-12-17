@@ -1,75 +1,79 @@
-const mongoose = require("mongoose");
 const passport = require("passport");
 const router = require("express").Router();
-const User = mongoose.model("User");
 const utils = require("../lib/utils");
+const db = require("../config/database");
 
-router.post("/login", function(req,res, next) {
-  User.findOne({ username: req.body.username })
-    .then((user) => {
-      if(!user) {
-        res.status(401).json({success: false, msg: "could not find user"})
-      }
+router.post("/login", async function (req, res, next) {
+  const conn = await db();
+  const username = req.body.username;
 
-      // fun defined at bottom of app.js
-      const isValid = utils.validPassword(
-        req.body.password,
-        user.hash,
-        user.salt
-      );
+  const query = `select * from users where users.username like '${username}'`;
 
-      if(isValid) {
-        const tokenObject = utils.issueJWT(user);
-
-        res.status(200).json({
-          success: true,
-          token: tokenObject.token,
-          expiresIn: tokenObject.expires,
-        })
-      }else {
-        res.status(401).json({
-          success: false,
-          msg: "you entered the wrong password"
-        })
-      }
+  const request = await conn
+    .request()
+    .query(query)
+    .then((result) => {
+      console.log(result);
+      res.status(200).json({
+        success: true,
+        msg: result.recordset[0],
+      });
     })
     .catch((err) => {
-      next(err)
-    })
+      res.status(200).json({
+        success: false,
+        msg: err,
+      });
+      console.log(err, "erro in result");
+    });
 });
 
-router.post("/register", function (req, res, next) {
+router.post("/register", async function (req, res, next) {
   const saltHash = utils.genPassword(req.body.password);
 
   const salt = saltHash.salt;
   const hash = saltHash.hash;
 
-  const newUser = new User({
-    username: req.body.username,
-    hash: hash,
-    salt: salt,
-  });
+  const username = req.body.username;
+  const password = saltHash.hash;
+  const email = req.body.email;
+  const phone = Number(req.body.phone);
+  const rule_id = Number(1);
 
   try {
-    newUser.save().then((user) => {
-      res.json({ success: true, user: user });
-    });
+    const conn = await db();
+
+    const query = `INSERT INTO [dbo].[users](username,email,phone,rule_id, password)VALUES('${username}', '${email}', ${phone}, ${rule_id}, '${password}')`;
+
+    const request = await conn
+      .request()
+      .query(query)
+      .then((result) => {
+        console.log(result);
+        res.status(200).json({
+          success: true,
+          msg: result.rowsAffected,
+        });
+      })
+      .catch((err) => {
+        res.status(200).json({
+          success: false,
+          msg: err,
+        });
+        console.log(err, "erro in result");
+      });
   } catch (err) {
-    console.log("error in saving user")
+    console.log("error in saving user", err);
     res.json({ success: false, msg: err });
   }
 });
 
-router.get(
-  "/protected",
-  passport.authenticate("jwt", { session: false }),
-  (req, res, next) => {
-    res.status(200).json({
-      success: true,
-      msg: "You are successfully authenticated to this route!",
-    });
-  }
-);
+router.get("/protected", passport.authenticate("jwt", { session: false }), (req, res, next) => {
+  res.status(200).json({
+    success: true,
+    msg: "You are successfully authenticated to this route!",
+  });
+});
 
 module.exports = router;
 

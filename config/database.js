@@ -39,38 +39,12 @@ const client = async () => {
       });
       return pool;
     } catch (err) {
-      console.log(err, "error connection to sql server");
-      pool = nul;
+      console.log(err, "error connection to sql server(dbconfig)");
+      pool = null;
     }
   };
 
-  return getConnection;
+  return await getConnection();
 };
 
 module.exports = client;
-
-// sql.connect(config, function (err) {
-//   if (err) console.log(err);
-
-//   let sqlRequest = new sql.Request();
-
-//   let sqlQuery = "Select * From users";
-
-//   sqlRequest.query(sqlQuery, function (err, data) {
-//     if (err) console.log(err);
-
-//     console.log(data);
-//   });
-// });
-
-// async function queryDb() {
-//   let pool = await sql.connect(config);
-//   let data = await pool.request().query("select * from users");
-
-//   pool.close;
-//   sql.close;
-
-//   return data;
-// }
-
-// module.exports = queryDb;
