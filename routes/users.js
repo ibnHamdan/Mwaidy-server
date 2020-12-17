@@ -13,16 +13,35 @@ router.post("/login", async function (req, res, next) {
     .request()
     .query(query)
     .then((result) => {
-      console.log(result);
-      res.status(200).json({
-        success: true,
-        msg: result.recordset[0],
-      });
+      const isValid = utils.validPassword(String(req.body.password), result.recordset[0].password);
+
+      if (isValid) {
+        const tokenObject = utils.issueJWT(11);
+
+        res.status(200).json({
+          msg: {
+            result,
+          },
+          success: true,
+          token: tokenObject.token,
+          expiresIn: tokenObject.expires,
+        });
+      } else {
+        res.status(401).json({
+          success: false,
+          msg: "you entered the wrong password",
+        });
+      }
+      // res.status(200).json({
+      //   success: true,
+      //   msg: result.recordset[0].password,
+      // });
     })
     .catch((err) => {
       res.status(200).json({
         success: false,
-        msg: err,
+        msg: "error in valid ",
+        err,
       });
       console.log(err, "erro in result");
     });
