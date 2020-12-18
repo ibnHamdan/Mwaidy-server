@@ -19,9 +19,7 @@ router.post("/login", async function (req, res, next) {
         const tokenObject = utils.issueJWT(11);
 
         res.status(200).json({
-          msg: {
-            result,
-          },
+          user: result.recordset[0],
           success: true,
           token: tokenObject.token,
           expiresIn: tokenObject.expires,
